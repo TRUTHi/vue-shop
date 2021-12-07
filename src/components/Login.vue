@@ -75,7 +75,7 @@ export default {
       this.$refs.loginFormRef.validate(async valid => {
         if (!valid) return
         const { data: result } = await this.$axios.post('login', this.loginForm)
-        if (result.meta.status === 400) return this.$message.error('login failure')
+        if (result.meta.status !== 200) return this.$message.error('login failure')
         this.$message.success('login successful')
         window.sessionStorage.setItem('token', result.data.token)
         this.$router.push('/home')
