@@ -68,7 +68,13 @@
             placement="top"
             :enterable="false"
           >
-            <el-button type="warning" icon="el-icon-setting" size="mini"></el-button>
+            <el-button
+              v-on:click="setRole(scope.row)"
+              type="warning"
+              icon="el-icon-setting"
+              size="mini"
+              @click="setRoleDialogVisible = true"
+            ></el-button>
           </el-tooltip>
         </template>
       </el-table-column>
@@ -134,6 +140,31 @@
       <span slot="footer" class="dialog-footer">
         <el-button v-on:click="modifyDialogVisible = false">Cancel</el-button>
         <el-button type="primary" v-on:click="modifyUser">Determine</el-button>
+      </span>
+    </el-dialog>
+    <!-- Assign Roles dialog box -->
+    <el-dialog
+      title="Assign Roles"
+      :visible.sync="setRoleDialogVisible"
+      width="50%"
+      v-on:close="setRoleDialogClosed"
+    >
+      <div>
+        <p>Current User: {{ userInfo.username }}</p>
+        <p>Current Role: {{ userInfo.role_name }}</p>
+        <p>Assign New Roles:</p>
+        <el-select v-model="selectedRoleId" placeholder="Please Select A Role">
+          <el-option
+            v-for="item in rolesList"
+            :key="item.id"
+            :label="item.roleName"
+            :value="item.id"
+          ></el-option>
+        </el-select>
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button v-on:click="setRoleDialogVisible = false">Cancel</el-button>
+        <el-button type="primary" v-on:click="saveRoleInfo">Determine</el-button>
       </span>
     </el-dialog>
   </div>
@@ -205,7 +236,15 @@ export default {
           { required: true, message: 'Please enter your mobile phone number', trigger: 'blur' },
           { validator: checkMobile, message: 'The mobile number is incorrect. Please enter it again', trigger: 'blur' }
         ]
-      }
+      },
+      // Controls the display of the Role assignment dialog box
+      setRoleDialogVisible: false,
+      // Save information about the user you are working with
+      userInfo: {},
+      // Save all role information
+      rolesList: [],
+      // Save the role ID selected by the user
+      selectedRoleId: ''
     }
   },
   methods: {
@@ -286,6 +325,25 @@ export default {
       if (result.meta.status !== 200) return this.$message.error('Failed to Delete a User.')
       this.$message.success('Deleting a User Succeeded.')
       this.getUserList()
+    },
+    async setRole (userInfo) {
+      this.userInfo = userInfo
+      const { data: result } = await this.$axios.get('roles')
+      if (result.meta.status !== 200) return this.$message.error('Failed to get the role list.')
+      this.rolesList = result.data
+      this.setRoleDialogVisible = true
+    },
+    async saveRoleInfo () {
+      if (!this.selectedRoleId) return this.$message.error('Select a role to assign.')
+      const { data: result } = await this.$axios.put(`users/${this.userInfo.id}/role`, { rid: this.selectedRoleId })
+      if (result.meta.status !== 200) return this.$message.error('Failed to assign roles.')
+      this.$message.success('Role Assignment succeeded.')
+      this.getUserList()
+      this.setRoleDialogVisible = false
+    },
+    setRoleDialogClosed () {
+      this.selectedRoleId = ''
+      this.userInfo = {}
     }
   },
   created () {
